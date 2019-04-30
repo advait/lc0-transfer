@@ -163,7 +163,7 @@ class Net:
             for row in weights:
                 f.write((" ".join(map(str, row.tolist())) + "\n").encode('utf-8'))
 
-        size = os.path.getsize(filename) / 1024**2
+        size = os.path.getsize(filename) / 1024 ** 2
         print("saved as '{}' {}M".format(filename, round(size, 2)))
 
     def save_proto(self, filename):
@@ -175,7 +175,7 @@ class Net:
             data = self.pb.SerializeToString()
             f.write(data)
 
-        size = os.path.getsize(filename) / 1024**2
+        size = os.path.getsize(filename) / 1024 ** 2
         print("saved as '{}' {}M".format(filename, round(size, 2)))
 
     def get_weights(self):
@@ -303,6 +303,7 @@ class Net:
 
         self.fill_conv_block(self.pb.weights.input, weights, gammas)
 
+
 def print_pb_stats(obj, parent=None):
     for descriptor in obj.DESCRIPTOR.fields:
         value = getattr(obj, descriptor.name)
@@ -317,6 +318,7 @@ def print_pb_stats(obj, parent=None):
             print("%s: %s" % (descriptor.full_name, enum_name))
         else:
             print("%s: %s" % (descriptor.full_name, value))
+
 
 def main(argv):
     net = Net()
