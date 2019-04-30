@@ -23,10 +23,9 @@ import tensorflow as tf
 import time
 import bisect
 from .lc0_az_policy_map import *
-#import lc0_az_policy_map
-import proto.net_pb2 as pb
+from .proto import net_pb2 as pb
 
-from net import Net
+from .net import Net
 
 
 def weight_variable(shape, name=None):
@@ -46,6 +45,7 @@ def weight_variable(shape, name=None):
     tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, weights)
     return weights
 
+
 # Bias weights for layers not followed by BatchNorm
 # We do not regularlize biases, so they are not
 # added to the regularlizer collection
@@ -59,6 +59,7 @@ def bias_variable(shape, name=None):
 def conv2d(x, W):
     return tf.nn.conv2d(x, W, data_format='NCHW',
                         strides=[1, 1, 1, 1], padding='SAME')
+
 
 class TFProcess:
     def __init__(self, cfg):
@@ -74,7 +75,7 @@ class TFProcess:
         self.policy_channels = self.cfg['model'].get('policy_channels', 32)
 
         policy_head = self.cfg['model'].get('policy', 'convolution')
-        value_head  = self.cfg['model'].get('value', 'wdl')
+        value_head = self.cfg['model'].get('value', 'wdl')
 
         self.POLICY_HEAD = None
         self.VALUE_HEAD = None
@@ -135,9 +136,9 @@ class TFProcess:
 
     def init_net(self, next_batch):
         self.x = next_batch[0]  # tf.placeholder(tf.float32, [None, 112, 8*8])
-        self.y_ = next_batch[1] # tf.placeholder(tf.float32, [None, 1858])
-        self.z_ = next_batch[2] # tf.placeholder(tf.float32, [None, 3])
-        self.q_ = next_batch[3] # tf.placeholder(tf.float32, [None, 3])
+        self.y_ = next_batch[1]  # tf.placeholder(tf.float32, [None, 1858])
+        self.z_ = next_batch[2]  # tf.placeholder(tf.float32, [None, 3])
+        self.q_ = next_batch[3]  # tf.placeholder(tf.float32, [None, 3])
         self.batch_norm_count = 0
         self.y_conv, self.z_conv = self.construct_net(self.x)
 
@@ -215,7 +216,7 @@ class TFProcess:
             for w in self.weights:
                 name = w.name.split(':')[0]
                 var = tf.Variable(
-                    tf.zeros(shape=w.shape), name='swa/'+name, trainable=False)
+                    tf.zeros(shape=w.shape), name='swa/' + name, trainable=False)
                 accum.append(
                     tf.assign(var, var * (n / (n + 1.)) + tf.stop_gradient(w) * (1. / (n + 1.))))
                 load.append(tf.assign(w, var))
@@ -283,8 +284,8 @@ class TFProcess:
                     # 50 move rule is the 110th input, or 109 starting from 0.
                     rule50_input = 109
                     for i in range(len(new_weights[e])):
-                        if (i % (num_inputs*9))//9 == rule50_input:
-                            new_weights[e][i] = new_weights[e][i]*99
+                        if (i % (num_inputs * 9)) // 9 == rule50_input:
+                            new_weights[e][i] = new_weights[e][i] * 99
 
                 # Convolution weights need a transpose
                 #
@@ -365,7 +366,8 @@ class TFProcess:
             self.lr = self.lr * (steps + 1) / self.warmup_steps
 
         # need to add 1 to steps because steps will be incremented after gradient update
-        if (steps + 1) % self.cfg['training']['train_avg_report_steps'] == 0 or (steps + 1) % self.cfg['training']['total_steps'] == 0:
+        if (steps + 1) % self.cfg['training']['train_avg_report_steps'] == 0 or (steps + 1) % self.cfg['training'][
+            'total_steps'] == 0:
             before_weights = self.session.run(self.weights)
 
         # Run training for this batch
@@ -387,12 +389,14 @@ class TFProcess:
         # Gradients of batch splits are summed, not averaged like usual, so need to scale lr accordingly to correct for this.
         corrected_lr = self.lr / batch_splits
         _, grad_norm = self.session.run([self.train_op, self.grad_norm],
-                                        feed_dict={self.learning_rate: corrected_lr, self.training: True, self.handle: self.train_handle})
+                                        feed_dict={self.learning_rate: corrected_lr, self.training: True,
+                                                   self.handle: self.train_handle})
 
         # Update steps since training should have incremented it.
         steps = tf.train.global_step(self.session, self.global_step)
 
-        if steps % self.cfg['training']['train_avg_report_steps'] == 0 or steps % self.cfg['training']['total_steps'] == 0:
+        if steps % self.cfg['training']['train_avg_report_steps'] == 0 or steps % self.cfg['training'][
+            'total_steps'] == 0:
             pol_loss_w = self.cfg['training']['policy_loss_weight']
             val_loss_w = self.cfg['training']['value_loss_weight']
             time_end = time.time()
@@ -520,7 +524,8 @@ class TFProcess:
                                      before in zip(after_weights, before_weights)]
         delta_norms = [np.linalg.norm(d.ravel()) for d in deltas]
         weight_norms = [np.linalg.norm(w.ravel()) for w in before_weights]
-        ratios = [(tensor.name, d / w) for d, w, tensor in zip(delta_norms, weight_norms, self.weights) if not 'moving' in tensor.name]
+        ratios = [(tensor.name, d / w) for d, w, tensor in zip(delta_norms, weight_norms, self.weights) if
+                  not 'moving' in tensor.name]
         all_summaries = [
             tf.Summary.Value(tag='update_ratios/' +
                                  name, simple_value=ratio)
@@ -545,7 +550,7 @@ class TFProcess:
         hist.max = float(np.max(values))
         hist.num = int(np.prod(values.shape))
         hist.sum = float(np.sum(values))
-        hist.sum_squares = float(np.sum(values**2))
+        hist.sum_squares = float(np.sum(values ** 2))
 
         # Requires equal number as bins, where the first goes from -DBL_MAX to bin_edges[1]
         # See https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/framework/summary.proto#L30
@@ -575,7 +580,7 @@ class TFProcess:
                 if isinstance(var, str):
                     var = tf.get_default_graph().get_tensor_by_name(var)
                 name = var.name.split(':')[0]
-                v = tf.Variable(var, name='save/'+name, trainable=False)
+                v = tf.Variable(var, name='save/' + name, trainable=False)
                 save_ops.append(tf.assign(v, var))
                 rest_ops.append(tf.assign(var, v))
             self.snap_save_op = tf.group(*save_ops)
@@ -625,8 +630,8 @@ class TFProcess:
                 rule50_input = 109
                 wt_flt = []
                 for i, weight in enumerate(np.ravel(nparray)):
-                    if (i % (num_inputs*9))//9 == rule50_input:
-                        wt_flt.append(weight/99)
+                    if (i % (num_inputs * 9)) // 9 == rule50_input:
+                        wt_flt.append(weight / 99)
                     else:
                         wt_flt.append(weight)
             else:
@@ -674,7 +679,7 @@ class TFProcess:
     def batch_norm(self, inputs, scale=False):
         if self.renorm_enabled:
             clipping = {
-                "rmin": 1.0/self.renorm_max_r,
+                "rmin": 1.0 / self.renorm_max_r,
                 "rmax": self.renorm_max_r,
                 "dmax": self.renorm_max_d
             }
@@ -814,7 +819,7 @@ class TFProcess:
             conv_pol2 = tf.nn.bias_add(
                 conv2d(conv_pol, W_pol_conv), b_pol_conv, data_format='NCHW')
 
-            h_conv_pol_flat = tf.reshape(conv_pol2, [-1, 80*8*8])
+            h_conv_pol_flat = tf.reshape(conv_pol2, [-1, 80 * 8 * 8])
             fc1_init = tf.constant(lc0_az_policy_map.make_map())
             W_fc1 = tf.get_variable("policy_map",
                                     initializer=fc1_init,
@@ -825,9 +830,9 @@ class TFProcess:
                                        input_channels=self.RESIDUAL_FILTERS,
                                        output_channels=self.policy_channels)
             h_conv_pol_flat = tf.reshape(
-                conv_pol, [-1, self.policy_channels*8*8])
+                conv_pol, [-1, self.policy_channels * 8 * 8])
             W_fc1 = weight_variable(
-                [self.policy_channels*8*8, 1858], name='fc1/weight')
+                [self.policy_channels * 8 * 8, 1858], name='fc1/weight')
             b_fc1 = bias_variable([1858], name='fc1/bias')
             self.weights.append(W_fc1)
             tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, b_fc1)
@@ -842,7 +847,7 @@ class TFProcess:
         conv_val = self.conv_block(flow, filter_size=1,
                                    input_channels=self.RESIDUAL_FILTERS,
                                    output_channels=32)
-        h_conv_val_flat = tf.reshape(conv_val, [-1, 32*8*8])
+        h_conv_val_flat = tf.reshape(conv_val, [-1, 32 * 8 * 8])
         W_fc2 = weight_variable([32 * 8 * 8, 128], name='fc2/weight')
         b_fc2 = bias_variable([128], name='fc2/bias')
         self.weights.append(W_fc2)
@@ -858,6 +863,5 @@ class TFProcess:
             h_fc3 = tf.nn.tanh(h_fc3)
         else:
             tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, b_fc3)
-
 
         return h_fc1, h_fc3
