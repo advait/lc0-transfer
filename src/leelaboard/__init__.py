@@ -17,7 +17,7 @@ LeelaBoardData = collections.namedtuple('LeelaBoardData',
 
 
 def pc_board_property(propertyname):
-    '''Create a property based on self.pc_board'''
+    """Create a property based on self.pc_board"""
 
     def prop(self):
         return getattr(self.pc_board, propertyname)
@@ -55,7 +55,7 @@ class LeelaBoard:
         return copied
 
     def pc_method(self, methodname):
-        '''Return attribute of self.pc_board, useful for copying method bindings'''
+        """Return attribute of self.pc_board, useful for copying method bindings"""
         return getattr(self.pc_board, methodname)
 
     def is_threefold(self):
@@ -187,7 +187,7 @@ class LeelaBoard:
         return planes
 
     def lcz_features(self):
-        '''Get neural network input planes as uint8'''
+        """Get neural network input planes as uint8"""
         # print(list(self._planes_iter()))
         planes_stack = []
         curdata = self.lcz_stack[-1]

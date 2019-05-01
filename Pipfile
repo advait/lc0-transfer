@@ -9,6 +9,7 @@ verify_ssl = true
 jupyter = "*"
 tensorflow = "*"
 python-chess = "*"
+pyyaml = "*"
 
 [requires]
 python_version = "3.7"

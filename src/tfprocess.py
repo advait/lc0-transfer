@@ -818,7 +818,7 @@ class TFProcess:
                 conv2d(conv_pol, W_pol_conv), b_pol_conv, data_format='NCHW')
 
             h_conv_pol_flat = tf.reshape(conv_pol2, [-1, 80 * 8 * 8])
-            fc1_init = tf.constant(lc0_az_policy_map.make_map())
+            fc1_init = tf.constant(make_map())
             W_fc1 = tf.get_variable("policy_map",
                                     initializer=fc1_init,
                                     trainable=False)
